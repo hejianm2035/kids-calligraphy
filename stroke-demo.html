@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>笔顺演示</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: KaiTi, STKaiti, 楷体, serif;
+  background: #f5f5f5;
+  min-height: 100vh;
+  padding: 20px;
+}
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 30px 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.char-title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+}
+.char-pinyin {
+  text-align: center;
+  font-size: 20px;
+  color: #666;
+  margin-bottom: 20px;
+}
+.stroke-info {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+}
+.stroke-info-item {
+  background: #fef0f0;
+  color: #e74c3c;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 16px;
+}
+.section-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15px;
+  text-align: center;
+}
+/* 田字格笔顺演示 */
+.stroke-demo-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+}
+.tian-grid {
+  width: 70px;
+  height: 70px;
+  border: 2px solid #e74c3c;
+  position: relative;
+  background: #fff;
+}
+.tian-grid::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed rgba(231,76,60,0.5);
+}
+.tian-grid::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed rgba(231,76,60,0.5);
+}
+.tian-grid .stroke-char {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 48px;
+  color: #333;
+  font-family: KaiTi, STKaiti, 楷体, serif;
+}
+.tian-grid .stroke-char.final {
+  color: #e74c3c;
+  font-weight: bold;
+}
+.stroke-arrow {
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  color: #e74c3c;
+}
+/* 笔顺符号和名称 */
+.stroke-symbols {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 20px;
+  color: #333;
+  letter-spacing: 8px;
+}
+.stroke-names {
+  text-align: center;
+  font-size: 16px;
+  color: #666;
+  letter-spacing: 4px;
+}
+/* 动画演示区域 */
+.animation-area {
+  display: flex;
+  justify-content: center;
+  margin: 25px 0;
+}
+#stroke-animation {
+  width: 200px;
+  height: 200px;
+}
+.btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+.btn {
+  padding: 10px 30px;
+  border: none;
+  border-radius: 25px;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: KaiTi, STKaiti, 楷体, serif;
+}
+.btn-primary {
+  background: #e74c3c;
+  color: #fff;
+}
+.btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+}
+.tip {
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  margin-top: 20px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="char-title" id="charTitle">木</div>
+  <div class="char-pinyin" id="charPinyin">mù</div>
+  
+  <div class="stroke-info">
+    <div class="stroke-info-item" id="strokeCount">4画</div>
+    <div class="stroke-info-item" id="radical">部首：木</div>
+  </div>
+
+  <div class="section-title">田字格笔顺演示</div>
+  <div class="stroke-demo-row" id="strokeDemoRow">
+    <!-- 动态生成 -->
+  </div>
+
+  <div class="section-title">笔顺动画</div>
+  <div class="animation-area">
+    <div id="stroke-animation"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="playAnimation()">播放动画</button>
+    <button class="btn btn-secondary" onclick="resetAnimation()">重置</button>
+  </div>
+
+  <div class="tip">提示：点击"播放动画"可查看逐笔书写动画</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+<script>
+// 获取URL参数
+function getQueryParam(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
+
+const char = getQueryParam('char') || '木';
+const pinyin = getQueryParam('pinyin') || '';
+const strokeCount = parseInt(getQueryParam('strokes')) || 0;
+
+// 设置标题
+document.getElementById('charTitle').textContent = char;
+document.getElementById('charPinyin').textContent = pinyin || ' ';
+if (strokeCount > 0) {
+  document.getElementById('strokeCount').textContent = strokeCount + '画';
+}
+
+// 常用字笔顺数据（简化版）
+const strokeData = {
+  '木': { symbols: '一丨丿㇏', names: '横 竖 撇 捺', radical: '木' },
+  '金': { symbols: '丿㇏一一丨丶丿一', names: '撇 捺 横 横 竖 点 撇 横', radical: '金' },
+  '水': { symbols: '亅㇇丿㇏', names: '竖钩 横撇 撇 捺', radical: '水' },
+  '火': { symbols: '丶丿丿㇏', names: '点 撇 撇 捺', radical: '火' },
+  '土': { symbols: '一丨一', names: '横 竖 横', radical: '土' },
+  '人': { symbols: '丿㇏', names: '撇 捺', radical: '人' },
+  '大': { symbols: '一丿㇏', names: '横 撇 捺', radical: '大' },
+  '小': { symbols: '亅丿丶', names: '竖钩 撇 点', radical: '小' },
+  '口': { symbols: '丨𠃍一', names: '竖 横折 横', radical: '口' },
+  '日': { symbols: '丨𠃍一一', names: '竖 横折 横 横', radical: '日' },
+  '月': { symbols: '丿𠃍一一', names: '撇 横折钩 横 横', radical: '月' },
+  '山': { symbols: '丨㇄丨', names: '竖 竖折 竖', radical: '山' },
+  '石': { symbols: '一丿丨𠃍一', names: '横 撇 竖 横折 横', radical: '石' },
+  '田': { symbols: '丨𠃍一丨一', names: '竖 横折 横 竖 横', radical: '田' },
+  '手': { symbols: '丿一一亅', names: '撇 横 横 竖钩', radical: '手' },
+  '目': { symbols: '丨𠃍一一一', names: '竖 横折 横 横 横', radical: '目' },
+  '耳': { symbols: '一丨丨一一一', names: '横 竖 竖 横 横 横', radical: '耳' },
+  '牙': { symbols: '一㇗亅丿', names: '横 竖折 竖钩 撇', radical: '牙' },
+  '头': { symbols: '丶丶一丿丶', names: '点 点 横 撇 点', radical: '大' },
+  '学': { symbols: '丶丶丿丶㇇乛亅一', names: '点 点 撇 点 横撇 横撇 竖钩 横', radical: '子' },
+  '习': { symbols: '㇇丶㇀', names: '横折钩 点 提', radical: '乙' },
+  '写': { symbols: '丶㇇一㇉丶丶丶', names: '点 横撇 横 竖折折钩 点 点 点', radical: '冖' },
+  '读': { symbols: '丶㇊一丨㇇丶丶一丿丶', names: '点 横折提 横 竖 横撇 点 点 横 撇 点', radical: '讠' },
+  '文': { symbols: '丶一丿㇏', names: '点 横 撇 捺', radical: '文' },
+  '字': { symbols: '丶㇇㇇亅一', names: '点 横撇 横撇 竖钩 横', radical: '子' },
+  '天': { symbols: '一一丿㇏', names: '横 横 撇 捺', radical: '大' },
+  '地': { symbols: '一丨㇀㇆丨乚', names: '横 竖 提 横折钩 竖 竖弯钩', radical: '土' },
+  '花': { symbols: '一丨丨丿丨丿乚', names: '横 竖 竖 撇 竖 撇 竖弯钩', radical: '艹' },
+  '草': { symbols: '一丨丨丨𠃍一一一丨', names: '横 竖 竖 竖 横折 横 横 横 竖', radical: '艹' },
+  '树': { symbols: '一丨丿㇏㇇丶一亅丶', names: '横 竖 撇 捺 横撇 点 横 竖钩 点', radical: '木' },
+  '林': { symbols: '一丨丿㇏一丨丿㇏', names: '横 竖 撇 捺 横 竖 撇 捺', radical: '木' },
+  '果': { symbols: '丨𠃍一一一丨丿㇏', names: '竖 横折 横 横 横 竖 撇 捺', radical: '木' },
+  '吃': { symbols: '丨𠃍一丿一一㇈', names: '竖 横折 横 撇 横 横 横折弯钩', radical: '口' },
+  '跑': { symbols: '丨𠃍一丨一丨㇀丿㇆一丨㇀', names: '竖 横折 横 竖 横 竖 提 撇 横折钩 横 竖 横折', radical: '足' },
+  '跳': { symbols: '丨𠃍一丨一丨㇀丿丶㇀乚丶丶', names: '竖 横折 横 竖 横 竖 提 撇 点 提 竖弯钩 点 点', radical: '足' },
+  '走': { symbols: '一丨一丨一丿㇏', names: '横 竖 横 竖 横 撇 捺', radical: '走' },
+  '飞': { symbols: '㇈丿丶', names: '横斜钩 撇 点', radical: '飞' },
+  '唱': { symbols: '丨𠃍一丨𠃍一一丨𠃍一一', names: '竖 横折 横 竖 横折 横 横 竖 横折 横 横', radical: '口' },
+  '做': { symbols: '丿丨一丨丨𠃍一丿一丿㇏', names: '撇 竖 横 竖 竖 横折 横 撇 横 撇 捺', radical: '亻' },
+  '工': { symbols: '一丨一', names: '横 竖 横', radical: '工' },
+  '农': { symbols: '丶㇇丿𠄌丿㇏', names: '点 横撇 撇 竖提 撇 捺', radical: '冖' },
+  '里': { symbols: '丨𠃍一一一丨一一', names: '竖 横折 横 横 横 竖 横 横', radical: '里' },
+  '国': { symbols: '丨𠃍一一丨一丶一', names: '竖 横折 横 横 竖 横 点 横', radical: '囗' },
+  '爸': { symbols: '丿丶丿㇏㇆丨一乚', names: '撇 点 撇 捺 横折钩 竖 横 竖弯钩', radical: '父' },
+  '妈': { symbols: 'ㄑ丿一㇆㇉一', names: '撇点 撇 横 横折 竖折折钩 横', radical: '女' },
+  '哥': { symbols: '一丨𠃍一丨一丨𠃍一亅', names: '横 竖 横折 横 竖 横 竖 横折 横 竖钩', radical: '口' },
+  '姐': { symbols: 'ㄑ丿一丨𠃍一一一', names: '撇点 撇 横 竖 横折 横 横 横', radical: '女' },
+  '弟': { symbols: '丶丿𠃍一㇉丨丿', names: '点 撇 横折 横 竖折折钩 竖 撇', radical: '弓' },
+  '妹': { symbols: 'ㄑ丿一一一丨丿㇏', names: '撇点 撇 横 横 横 竖 撇 捺', radical: '女' },
+  '爷': { symbols: '丿丶丿㇏㇆丨', names: '撇 点 撇 捺 横折钩 竖', radical: '父' },
+  '奶': { symbols: 'ㄑ丿一㇋丿', names: '撇点 撇 横 横折折折钩 撇', radical: '女' },
+  '红': { symbols: '𠃋𠃋㇀一丨一', names: '撇折 撇折 提 横 竖 横', radical: '纟' },
+  '黄': { symbols: '一丨丨一丨𠃍一丨一丿丶', names: '横 竖 竖 横 竖 横折 横 竖 横 撇 点', radical: '黄' },
+  '蓝': { symbols: '一丨丨丨丨丿一丶丨𠃍丨丨一', names: '横 竖 竖 竖 竖 撇 横 点 竖 横折 竖 竖 横', radical: '艹' },
+  '绿': { symbols: '𠃋𠃋㇀㇇一一亅丶㇀丿㇏', names: '撇折 撇折 提 横折 横 横 竖钩 点 提 撇 捺', radical: '纟' },
+  '白': { symbols: '丿丨𠃍一一', names: '撇 竖 横折 横 横', radical: '白' },
+  '黑': { symbols: '丨𠃍丶丿一丨一一丶丶丶丶', names: '竖 横折 点 撇 横 竖 横 横 点 点 点 点', radical: '黑' },
+  '上': { symbols: '丨一一', names: '竖 横 横', radical: '一' },
+  '下': { symbols: '一丨丶', names: '横 竖 点', radical: '一' },
+  '中': { symbols: '丨𠃍一丨', names: '竖 横折 横 竖', radical: '丨' },
+  '左': { symbols: '一丿一丨一', names: '横 撇 横 竖 横', radical: '工' },
+  '右': { symbols: '一丿丨𠃍一', names: '横 撇 竖 横折 横', radical: '口' },
+  '一': { symbols: '一', names: '横', radical: '一' },
+  '二': { symbols: '一一', names: '横 横', radical: '二' },
+  '三': { symbols: '一一一', names: '横 横 横', radical: '一' },
+  '四': { symbols: '丨𠃍丿㇄一', names: '竖 横折 撇 竖弯 横', radical: '囗' },
+  '五': { symbols: '一丨𠃍一', names: '横 竖 横折 横', radical: '二' },
+  '六': { symbols: '丶一丿丶', names: '点 横 撇 点', radical: '八' },
+  '七': { symbols: '一㇟', names: '横 竖弯钩', radical: '一' },
+  '八': { symbols: '丿㇏', names: '撇 捺', radical: '八' },
+  '九': { symbols: '丿㇈', names: '撇 横折弯钩', radical: '丿' },
+  '十': { symbols: '一丨', names: '横 竖', radical: '十' }
+};
+
+// 获取笔顺数据
+const data = strokeData[char] || { symbols: '', names: '暂无数据', radical: '' };
+if (data.radical) {
+  document.getElementById('radical').textContent = '部首：' + data.radical;
+}
+
+// 生成田字格笔顺演示
+function generateStrokeDemo() {
+  const row = document.getElementById('strokeDemoRow');
+  row.innerHTML = '';
+  
+  if (!data.symbols) {
+    row.innerHTML = '<div style="color:#999;text-align:center;padding:20px;">暂无笔顺数据</div>';
+    return;
+  }
+  
+  const symbols = data.symbols.split('');
+  const names = data.names.split(' ');
+  
+  // 生成逐笔演示（最多显示6格，最后一格是完整字）
+  const demoCount = Math.min(symbols.length, 6);
+  for (let i = 0; i < demoCount; i++) {
+    const grid = document.createElement('div');
+    grid.className = 'tian-grid';
+    
+    if (i < demoCount - 1) {
+      // 显示单笔
+      const charEl = document.createElement('div');
+      charEl.className = 'stroke-char';
+      charEl.textContent = symbols[i];
+      charEl.style.fontSize = '36px';
+      grid.appendChild(charEl);
+    } else {
+      // 最后一格显示完整字
+      const charEl = document.createElement('div');
+      charEl.className = 'stroke-char final';
+      charEl.textContent = char;
+      grid.appendChild(charEl);
+    }
+    
+    row.appendChild(grid);
+    
+    // 添加箭头（除了最后一个）
+    if (i < demoCount - 1) {
+      const arrow = document.createElement('div');
+      arrow.className = 'stroke-arrow';
+      arrow.textContent = '→';
+      row.appendChild(arrow);
+    }
+  }
+  
+  // 显示笔顺符号和名称
+  if (data.symbols) {
+    const symbolsDiv = document.createElement('div');
+    symbolsDiv.className = 'stroke-symbols';
+    symbolsDiv.style.width = '100%';
+    symbolsDiv.textContent = '笔顺：' + data.symbols;
+    row.appendChild(symbolsDiv);
+    
+    const namesDiv = document.createElement('div');
+    namesDiv.className = 'stroke-names';
+    namesDiv.style.width = '100%';
+    namesDiv.textContent = '名称：' + data.names;
+    row.appendChild(namesDiv);
+  }
+}
+
+generateStrokeDemo();
+
+// 笔顺动画
+let writer = null;
+function initAnimation() {
+  const container = document.getElementById('stroke-animation');
+  container.innerHTML = '';
+  try {
+    writer = HanziWriter.create('stroke-animation', char, {
+      width: 200,
+      height: 200,
+      padding: 10,
+      showOutline: true,
+      strokeAnimationSpeed: 1,
+      delayBetweenStrokes: 300,
+      strokeColor: '#333',
+      outlineColor: '#ddd',
+      radicalColor: '#e74c3c'
+    });
+  } catch (e) {
+    document.getElementById('stroke-animation').innerHTML = '<div style="color:#999;text-align:center;padding:60px 0;">动画加载失败</div>';
+  }
+}
+
+function playAnimation() {
+  if (writer) {
+    writer.animateCharacter();
+  }
+}
+
+function resetAnimation() {
+  if (writer) {
+    writer.hideCharacter();
+    writer.showOutline();
+  }
+}
+
+// 初始化动画
+setTimeout(initAnimation, 500);
+</script>
+</body>
+</html>
